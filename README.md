@@ -5,6 +5,8 @@ See [Dynamic Analysis can be Improved with Automatic Test Suite Refactoring](htt
 
 We provide the guidelines for the Eclipse IDE.
 
+Contact: [Martin Monperrus](http://www.monperrus.net/martin/contact)
+
 Compilation
 =====
 
