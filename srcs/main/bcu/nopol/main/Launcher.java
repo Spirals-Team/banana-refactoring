@@ -21,9 +21,15 @@ import bcu.nopol.control.IfUsage;
 
 public class Launcher {
 	
+	// set here this to your own path
+	public static final String WORKSPACE_METADATA_PATH = "/home/martin/workspace/.metadata";
+	public static final String ECLIPSE_PROJECT_NAME = "spojo-core-refactored";
+	public static final String OUTPUT_PROJECT_PATH = "/home/martin/workspace/spojo-core-refactored";
+	
+	
 	private List<StackTraceElement> cuts = null;
-	private String eclipseMetadata = "/home/bcornu/workspace/.metadata";
-	private String outputProject;
+	private String eclipseMetadata = WORKSPACE_METADATA_PATH;
+	private String eclipseProjectName;
 	private String outputProjectPath;
 	private static Launcher launch;
 
@@ -41,13 +47,12 @@ public class Launcher {
 //	private String srcTest = "src/test/java";
 		
 	public Launcher(String[] args) {
-		// TODO Auto-generated constructor stub
 	}
 
 	public static void main(String[] args) throws Throwable {
 		launch = new Launcher(args);
-		launch.outputProject = launch.projectName+"-spooned";
-		launch.outputProjectPath = "/home/bcornu/workspace/"+launch.outputProject;
+		launch.eclipseProjectName = ECLIPSE_PROJECT_NAME;
+		launch.outputProjectPath = OUTPUT_PROJECT_PATH;
 		if(args.length==0 || args[0].equals("-1"))
 			launch.expe1();
 		else if(args[0].equals("-2"))
@@ -80,7 +85,8 @@ public class Launcher {
 	private void expe2() throws Throwable {
 		TestRunnerCore runner = new TestRunnerCore();
 		runner.setEclipseMetadataFolder(eclipseMetadata);
-		runner.setEclipseProject(outputProject);
+		runner.setEclipseProject(eclipseProjectName);
+		System.out.println("searching for tests in "+outputProjectPath+"/"+srcTest);
 		ITestResult result= runner.runAllTestsInDirectory(outputProjectPath+"/"+srcTest);
 		
 		Map<Integer, Map<String, Map<String, Map<Integer, IfUsage>>>> ifMap2 = IfController.getIfMap();
@@ -176,35 +182,7 @@ public class Launcher {
 		});
 		impureTests.addAll(cuts);
 		impureConsts.addAll(cuts);
-		System.err.println("test always pure :"+purTest.size());
-		System.err.println("test absol impure :"+impureTests.size());
-		System.err.println("total const :"+IfController.getConstNumberRetenue()+":"+IfController.getConstNumber());
-		System.err.println("impure const: "+impureConst+ " =? "+impureConsts.size());
-		System.err.println("exec ifs: "+ifMap2.keySet().size());
-		System.err.println("purely cov: "+pureAlways.size());
-		System.err.println("impurely cov: "+impureAlways.size());
 
-		System.err.println("----------------------------");
-		System.err.println(projectName+"&"+result.getNbRunTests()+
-				"&"+purTest.size()+
-				"&"+"\\%"+
-				"&"+impureTests.size()+
-				"&"+"\\%"+
-				"&"+IfController.getConstNumber()+
-				"&"+impureConsts.size()+
-				"&"+"\\%"+
-				"&"+"?"+
-				"&"+ifMap2.keySet().size()+
-				"&"+pureAlways.size()+
-				"&"+"\\%"+
-				"&"+impureAlways.size()+
-				"&"+"\\% \\\\");
-		System.err.println("----------------------------");
-		
-		
-		
-		System.err.println("pure once: "+pureOnce.size());
-		System.err.println("impure once: "+impureOnce.size());
 		
 		for (StackTraceElement ste : cuts) {
 			System.out.println(ste);
@@ -218,11 +196,38 @@ public class Launcher {
 		spooner2.setOutputFolder(outputProjectPath+"/"+srcTest);
 		spooner2.spoon();
 		
+		System.out.println("test always pure :"+purTest.size());
+		System.out.println("test absol impure :"+impureTests.size());
+		System.out.println("number of const :"+IfController.getConstNumberRetenue()+":"+IfController.getConstNumber());
+		System.out.println("number of impure const: "+impureConst+ " =? "+impureConsts.size());
+
+		System.out.println("----------------------------");
+		System.out.println(projectName+"&"+result.getNbRunTests()+
+				"&"+purTest.size()+
+				"&"+"\\%"+
+				"&"+impureTests.size()+
+				"&"+"\\%"+
+				"&"+IfController.getConstNumber()+
+				"&"+impureConsts.size()+
+				"&"+"\\%"+
+				"&"+"?"+
+				"&"+ifMap2.keySet().size()+
+				"&"+pureAlways.size()+
+				"&"+"\\%"+
+				"&"+impureAlways.size()+
+				"&"+"\\% \\\\");
+		System.out.println("----------------------------");
+		System.out.println("exec ifs: "+ifMap2.keySet().size());
+		System.out.println("pure once ifs: "+pureOnce.size());
+		System.out.println("purely cov ifs: "+pureAlways.size());
+		System.out.println("impurely cov ifs: "+impureAlways.size());
+		System.out.println("impure once ifs: "+impureOnce.size());
+		
 }
 	
 	private void expe3() throws Throwable {
 		ISpooner spooner2 = new DefaultSpooner();
-		spooner2.setEclipseProject(outputProject);
+		spooner2.setEclipseProject(eclipseProjectName);
 		spooner2.setEclipseMetadataFolder(eclipseMetadata);
 		spooner2.setSourceFolder(srcTest);
 		spooner2.setProcessors("bcu.nopol.processor.TestLinerAll","bcu.nopol.processor.ExpectedRemover");
@@ -233,7 +238,7 @@ public class Launcher {
 	private void expe4() throws Throwable {
 		TestRunnerCore runner = new TestRunnerCore();
 		runner.setEclipseMetadataFolder(eclipseMetadata);
-		runner.setEclipseProject(outputProject);
+		runner.setEclipseProject(eclipseProjectName);
 		runner.runAllTestsInDirectory(outputProjectPath+"/"+srcTest);
 		
 		Map<Integer, Map<String, Map<String, Map<Integer, IfUsage>>>> ifMap2 = IfController.getIfMap();
@@ -286,11 +291,11 @@ public class Launcher {
 			if(alwaysPure)
 				pureAlways.add(ifNumber);
 		}
-		System.err.println("exec ifs: "+ifMap2.keySet().size());
-		System.err.println("pure once: "+pureOnce.size());
-		System.err.println("pure always: "+pureAlways.size());
-		System.err.println("impure always: "+impureAlways.size());
-		System.err.println("impure once: "+impureOnce.size());
+		System.out.println("exec ifs: "+ifMap2.keySet().size());
+		System.out.println("pure once ifs: "+pureOnce.size());
+		System.out.println("purely cov ifs: "+pureAlways.size());
+		System.out.println("impurely cov ifs: "+impureAlways.size());
+		System.out.println("impure once ifs: "+impureOnce.size());
 	}
 
 	public static List<StackTraceElement> getCurrentCuts() {
