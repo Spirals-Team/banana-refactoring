@@ -3,12 +3,23 @@ This repository contains a research prototype for automatically refactoring test
 
 See [Dynamic Analysis can be Improved with Automatic Test Suite Refactoring](http://arxiv.org/pdf/1506.01883) (Jifeng Xuan, Benoit Cornu, Matias Martinez, Benoit Baudry, Lionel Seinturier, Martin Monperrus), Technical report 1506.01883, Arxiv, 2015
 
-We provide the guidelines for the Eclipse IDE.
+```
+@techreport{brefactoring,
+   author = {Jifeng Xuan and Benoit Cornu and Matias Martinez and Benoit Baudry and Lionel Seinturier and Martin Monperrus},
+    title = {{Dynamic Analysis can be Improved with Automatic Test Suite Refactoring}},
+  institution = {Arxiv},
+   number = {1506.01883},
+     year = 2015,
+     url = {http://arxiv.org/pdf/1506.01883},
+}
+```
 
 Contact: [Martin Monperrus](http://www.monperrus.net/martin/contact)
 
 Compilation
 =====
+
+We provide the guidelines for the Eclipse IDE.
 
 ```
 git clone https://github.com/Spirals-Team/banana-refactoring
