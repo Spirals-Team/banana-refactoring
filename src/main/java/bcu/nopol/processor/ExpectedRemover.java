@@ -16,6 +16,7 @@ import spoon.reflect.reference.CtFieldReference;
 import spoon.reflect.reference.CtTypeReference;
 
 @SuppressWarnings("rawtypes")
+/** removes the expected exceptions */
 public class ExpectedRemover extends AbstractProcessor<CtMethod> {
 
 	

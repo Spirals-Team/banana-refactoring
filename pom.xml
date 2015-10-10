@@ -3,7 +3,7 @@
 	<groupId>sacha</groupId>
 	<artifactId>banana-refactoring</artifactId>
 	<version>0.1</version>
-	<name>sacha infra</name>
+	<name>banana-refactoring</name>
 
 	<dependencies>
 		<dependency>
@@ -30,8 +30,6 @@
 	</dependencies>
 	
 	<build>
-		<sourceDirectory>srcs/main</sourceDirectory>
-		<outputDirectory>bin</outputDirectory>
 		<plugins>
 			 <plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -39,33 +37,32 @@
 				<configuration>
 					<source>1.7</source>
 					<target>1.7</target>
-					<excludes>
-						<exclude>**/*.*</exclude>
-					</excludes>
 				</configuration>
 			 </plugin>
-			 <plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>1.1</version>
-				<executions>
-					<execution>
-						<id>add-source</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>add-source</goal>
-						</goals>
-						<configuration>
-							<sources>
-<!-- 								<source>srcs/framework</source> -->
-<!-- 								<source>srcs/processors</source> -->
-								<source>srcs/utils</source>
-							</sources>
-						</configuration>
-					</execution>
-				</executions>
-			 </plugin>
-		</plugins>
+<plugin>
+      <artifactId>maven-assembly-plugin</artifactId>
+      <configuration>
+        <archive>
+          <manifest>
+                <mainClass>bcu.nopol.main.Launcher</mainClass>
+          </manifest>
+        </archive>
+        <descriptorRefs>
+          <descriptorRef>jar-with-dependencies</descriptorRef>
+        </descriptorRefs>
+      </configuration>
+      <executions>
+    <execution>
+      <id>make-assembly</id> <!-- this is used for inheritance merges -->
+      <phase>package</phase> <!-- bind to the packaging phase -->
+      <goals>
+        <goal>single</goal>
+      </goals>
+    </execution>
+  </executions>
+      
+    </plugin>
+    </plugins>
 	</build>
 
 </project>

@@ -14,6 +14,7 @@ import spoon.reflect.code.CtAssignment;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtCatch;
 import spoon.reflect.code.CtFieldAccess;
+import spoon.reflect.code.CtForEach;
 import spoon.reflect.code.CtLocalVariable;
 import spoon.reflect.code.CtStatement;
 import spoon.reflect.code.CtVariableAccess;
@@ -169,6 +170,11 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 					skippedField++;
 					continue;
 				}
+			}
+			
+			// if we are refereering to a foreach variable, do nothing
+			if (variableAccess.getVariable().getDeclaration().getParent() instanceof CtForEach) {
+				continue;
 			}
 			if(!extracted)continue;
 			CtFieldReference ref = getFactory().Core().createFieldReference();

@@ -46,16 +46,15 @@ Add as dependency of `spojo-core-refactored`, the banana-refactoring project.
 Go to class `bcu.nopol.main.Launcher.java` and set the constants:
 
 * `WORKSPACE_METADATA_PATH` 
-* `ECLIPSE_PROJECT_NAME` 
+* `ORIG_ECLIPSE_PROJECT_NAME` 
+* `TARGET_ECLIPSE_PROJECT_NAME` 
 * `OUTPUT_PROJECT_PATH`
 
-Run `bcu.nopol.main.Launcher.main` with argument "-1" (Run >> Run configurations). This replaces the source code of test classes and application classes of `spojo-core-refactored` by the instrumented version. Refresh the project `spojo-core-refactored` to force full re-compilation.
+Run `bcu.nopol.main.Launcher.main` with argument "-1" (Run >> Run configurations). This transforms the source code of test classes and application classes of `spojo-core` and put the instrumented version in TARGET_ECLIPSE_PROJECT_NAME. Refresh the project `spojo-core-refactored` to force full re-compilation.
 
 Run `bcu.nopol.main.Launcher.main` with  argument "-2". This computes the number of pure and impure tests, and the file `cutsPerIf` and split the test cases.  Refresh the project `spojo-core-refactored` to force full re-compilation (esp of the split test cases).
 
-Run `bcu.nopol.main.Launcher.main` with  argument "-3". This transforms again the splited test classes of `spojo-core-refactored`.  Refresh the project `spojo-core-refactored` to force full re-compilation.
-
-Run `bcu.nopol.main.Launcher.main` with  argument "-4". This runs the test suite again to compute the number of pure and impure tests after b-refactoring.
+That's it, you have the refactored test suite!
 
 ** If one of the phase fails, always start at phase #1 again **
 

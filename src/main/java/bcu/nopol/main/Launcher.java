@@ -5,12 +5,15 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+
+import com.sun.org.glassfish.gmbal.Impact;
 
 import sacha.impl.DefaultSpooner;
 import sacha.impl.TestRunnerCore;
@@ -22,19 +25,27 @@ import bcu.nopol.control.IfUsage;
 public class Launcher {
 	
 	// set here this to your own path
-	public static final String WORKSPACE_METADATA_PATH = "/home/martin/workspace/.metadata";
-	public static final String ECLIPSE_PROJECT_NAME = "spojo-core-refactored";
-	public static final String OUTPUT_PROJECT_PATH = "/home/martin/workspace/spojo-core-refactored";
+	public static final String WORKSPACE_METADATA_PATH = 
+			System.getProperty("WORKSPACE_METADATA_PATH") != null ? 
+			System.getProperty("WORKSPACE_METADATA_PATH")
+			: "/home/martin/workspace/.metadata";
+	public static final String ORIG_ECLIPSE_PROJECT_NAME = 
+			System.getProperty("ORIG_ECLIPSE_PROJECT_NAME") != null ? 
+			System.getProperty("ORIG_ECLIPSE_PROJECT_NAME")
+			: "spojo-core-refactored";
+	public static final String TARGET_ECLIPSE_PROJECT_NAME = 
+			System.getProperty("TARGET_ECLIPSE_PROJECT_NAME") != null ? 
+			System.getProperty("TARGET_ECLIPSE_PROJECT_NAME")
+			: "spojo-core-refactored";
+	public static final String OUTPUT_PROJECT_PATH = 
+			System.getProperty("OUTPUT_PROJECT_PATH") != null ? 
+			System.getProperty("OUTPUT_PROJECT_PATH")
+			: "/home/martin/workspace/spojo-core-refactored";
 	
 	
 	private List<StackTraceElement> cuts = null;
 	private String eclipseMetadata = WORKSPACE_METADATA_PATH;
-	private String eclipseProjectName;
-	private String outputProjectPath;
 	private static Launcher launch;
-
-
-	private final String projectName = "spojo-core";
 
 	private final String srcJava = "src/main/java";
 	private String srcTest = "src/test/java";
@@ -51,8 +62,6 @@ public class Launcher {
 
 	public static void main(String[] args) throws Throwable {
 		launch = new Launcher(args);
-		launch.eclipseProjectName = ECLIPSE_PROJECT_NAME;
-		launch.outputProjectPath = OUTPUT_PROJECT_PATH;
 		if(args.length==0 || args[0].equals("-1"))
 			launch.expe1();
 		else if(args[0].equals("-2"))
@@ -66,28 +75,30 @@ public class Launcher {
 	
 	private void expe1() throws Throwable {
 		ISpooner spooner = new DefaultSpooner();
-		spooner.setEclipseProject(projectName);
+		spooner.setEclipseProject(ORIG_ECLIPSE_PROJECT_NAME);
 		spooner.setEclipseMetadataFolder(eclipseMetadata);
+		System.out.println(ORIG_ECLIPSE_PROJECT_NAME);
+		System.out.println(eclipseMetadata);
 		spooner.setSourceFolder(new String[]{srcJava});
 		spooner.setProcessors("bcu.nopol.processor.IfProcessorAll");
-		spooner.setOutputFolder(outputProjectPath+"/"+srcJava);
+		spooner.setOutputFolder(OUTPUT_PROJECT_PATH+"/"+srcJava);
 		spooner.spoon();
 		
 		spooner = new DefaultSpooner();
-		spooner.setEclipseProject(projectName);
+		spooner.setEclipseProject(ORIG_ECLIPSE_PROJECT_NAME);
 		spooner.setEclipseMetadataFolder(eclipseMetadata);
 		spooner.setSourceFolder(new String[]{srcTest});
 		spooner.setProcessors("bcu.nopol.processor.TestLinerAll");
-		spooner.setOutputFolder(outputProjectPath+"/"+srcTest);
+		spooner.setOutputFolder(OUTPUT_PROJECT_PATH+"/"+srcTest);
 		spooner.spoon();
 	}
 	
 	private void expe2() throws Throwable {
 		TestRunnerCore runner = new TestRunnerCore();
 		runner.setEclipseMetadataFolder(eclipseMetadata);
-		runner.setEclipseProject(eclipseProjectName);
-		System.out.println("searching for tests in "+outputProjectPath+"/"+srcTest);
-		ITestResult result= runner.runAllTestsInDirectory(outputProjectPath+"/"+srcTest);
+		runner.setEclipseProject(TARGET_ECLIPSE_PROJECT_NAME);
+		System.out.println("searching for tests in "+OUTPUT_PROJECT_PATH+"/"+srcTest);
+		ITestResult result= runner.runAllTestsInDirectory(OUTPUT_PROJECT_PATH+"/"+srcTest);
 		
 		Map<Integer, Map<String, Map<String, Map<Integer, IfUsage>>>> ifMap2 = IfController.getIfMap();
 		Set<Integer> impureOnce = new TreeSet<>();
@@ -97,12 +108,13 @@ public class Launcher {
 		cuts = new ArrayList<>();
 		int impureConst = 0;
 		List<String> spoonedFiles = new ArrayList<>();
-		File cutsPerTest = new File(outputProjectPath+"/cutsPerIf");
+		File cutsPerTest = new File(OUTPUT_PROJECT_PATH+"/cutsPerIf");
 		if(!cutsPerTest.exists())
 			if(!cutsPerTest.createNewFile())
 				System.err.println("cannot write MEDIAN FILE");
 		PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(cutsPerTest)));
 
+		System.out.println("map size "+ifMap2.keySet().size());
 		Set<String> impTest = new TreeSet<>();
 		Set<String> purTest = new TreeSet<>();
 		for (Integer ifNumber : ifMap2.keySet()) {
@@ -188,13 +200,34 @@ public class Launcher {
 			System.out.println(ste);
 		}
 		
+		
+		// now the transformation
 		ISpooner spooner2 = new DefaultSpooner();
-		spooner2.setEclipseProject(projectName);
+		spooner2.setEclipseProject(ORIG_ECLIPSE_PROJECT_NAME);
 		spooner2.setEclipseMetadataFolder(eclipseMetadata);
 		spooner2.setSourceFolder(spoonedFiles.toArray(new String[0]));
+		System.out.println(Arrays.toString(spoonedFiles.toArray(new String[0])));
 		spooner2.setProcessors("bcu.nopol.processor.TestRuleAdder","bcu.nopol.processor.MethodCutterProcessor");
-		spooner2.setOutputFolder(outputProjectPath+"/"+srcTest);
+		spooner2.setOutputFolder(OUTPUT_PROJECT_PATH+"/"+srcTest);
 		spooner2.spoon();
+		
+		// plus removing the expected
+		spooner2 = new DefaultSpooner();
+		spooner2.setEclipseProject(TARGET_ECLIPSE_PROJECT_NAME);
+		spooner2.setEclipseMetadataFolder(eclipseMetadata);
+		spooner2.setSourceFolder(srcTest);
+		spooner2.setProcessors("bcu.nopol.processor.ExpectedRemover");
+		spooner2.setOutputFolder(OUTPUT_PROJECT_PATH+"/"+srcTest);
+		spooner2.spoon();
+
+		// plus putting back the original app code
+		spooner2 = new DefaultSpooner();
+		spooner2.setEclipseProject(ORIG_ECLIPSE_PROJECT_NAME);
+		spooner2.setEclipseMetadataFolder(eclipseMetadata);
+		spooner2.setSourceFolder(srcJava);
+		spooner2.setOutputFolder(OUTPUT_PROJECT_PATH+"/"+srcJava);
+		spooner2.spoon();
+
 		
 		System.out.println("test always pure :"+purTest.size());
 		System.out.println("test absol impure :"+impureTests.size());
@@ -202,7 +235,7 @@ public class Launcher {
 		System.out.println("number of impure const: "+impureConst+ " =? "+impureConsts.size());
 
 		System.out.println("----------------------------");
-		System.out.println(projectName+"&"+result.getNbRunTests()+
+		System.out.println(ORIG_ECLIPSE_PROJECT_NAME+"&"+result.getNbRunTests()+
 				"&"+purTest.size()+
 				"&"+"\\%"+
 				"&"+impureTests.size()+
@@ -226,20 +259,25 @@ public class Launcher {
 }
 	
 	private void expe3() throws Throwable {
-		ISpooner spooner2 = new DefaultSpooner();
-		spooner2.setEclipseProject(eclipseProjectName);
-		spooner2.setEclipseMetadataFolder(eclipseMetadata);
-		spooner2.setSourceFolder(srcTest);
-		spooner2.setProcessors("bcu.nopol.processor.TestLinerAll","bcu.nopol.processor.ExpectedRemover");
-		spooner2.setOutputFolder(outputProjectPath+"/"+srcTest);
-		spooner2.spoon();
+		TestRunnerCore runner = new TestRunnerCore();
+		runner.setEclipseMetadataFolder(eclipseMetadata);
+		runner.setEclipseProject(TARGET_ECLIPSE_PROJECT_NAME);
+		runner.runAllTestsInDirectory(OUTPUT_PROJECT_PATH+"/"+srcTest);
+
+//		ISpooner spooner2 = new DefaultSpooner();
+//		spooner2.setEclipseProject(TARGET_ECLIPSE_PROJECT_NAME);
+//		spooner2.setEclipseMetadataFolder(eclipseMetadata);
+//		spooner2.setSourceFolder(srcTest);
+//		spooner2.setProcessors("bcu.nopol.processor.TestLinerAll","bcu.nopol.processor.ExpectedRemover");
+//		spooner2.setOutputFolder(OUTPUT_PROJECT_PATH+"/"+srcTest);
+//		spooner2.spoon();
 	}
 	
 	private void expe4() throws Throwable {
 		TestRunnerCore runner = new TestRunnerCore();
 		runner.setEclipseMetadataFolder(eclipseMetadata);
-		runner.setEclipseProject(eclipseProjectName);
-		runner.runAllTestsInDirectory(outputProjectPath+"/"+srcTest);
+		runner.setEclipseProject(TARGET_ECLIPSE_PROJECT_NAME);
+		runner.runAllTestsInDirectory(OUTPUT_PROJECT_PATH+"/"+srcTest);
 		
 		Map<Integer, Map<String, Map<String, Map<Integer, IfUsage>>>> ifMap2 = IfController.getIfMap();
 		Set<Integer> impureOnce = new TreeSet<>();
