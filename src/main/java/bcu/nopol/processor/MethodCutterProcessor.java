@@ -1,5 +1,6 @@
 package bcu.nopol.processor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,12 +8,14 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.junit.FixMethodOrder;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtAssignment;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtCatch;
+import spoon.reflect.code.CtCodeSnippetStatement;
 import spoon.reflect.code.CtFieldAccess;
 import spoon.reflect.code.CtForEach;
 import spoon.reflect.code.CtLocalVariable;
@@ -25,11 +28,13 @@ import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtFieldReference;
 import spoon.reflect.visitor.Filter;
-import spoon.support.reflect.code.CtFieldAccessImpl;
+import bcornu.resi.annot.BananaRefactoringRunner;
 import bcornu.resi.annot.DontRunAfter;
 import bcornu.resi.annot.DontRunBefore;
 import bcornu.resi.annot.OldAfter;
 import bcornu.resi.annot.OldBefore;
+import bcornu.resi.annot.RunAfter;
+import bcornu.resi.annot.RunBefore;
 import bcu.nopol.main.Launcher;
 
 
@@ -67,32 +72,42 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 			return;
 		}
 		
-		boolean isTest = false;
-		for (CtAnnotation annot : element.getAnnotations()) {
-			if(annot.getAnnotationType().getQualifiedName().equals("org.junit.Test"))
-				isTest=true;
-			if(annot.getAnnotationType().getQualifiedName().equals("org.junit.Before")){
-				annot.setAnnotationType(getFactory().Type().createReference(OldBefore.class));
-			}
-			if(annot.getAnnotationType().getQualifiedName().equals("org.junit.After")){
-				annot.setAnnotationType(getFactory().Type().createReference(OldAfter.class));
-			}
-		}
-		if(!isTest){
-			if(element.getSimpleName().startsWith("test") && element.hasModifier(ModifierKind.PUBLIC) && !parent.hasModifier(ModifierKind.ABSTRACT))
-				isTest=true;
-		}
-		if(!isTest)return;
+		if (element.getAnnotation(org.junit.Test.class)==null) {return;}
 
-		boolean toBeSpooned = false;
+		BRefactoring.annotateWithNewRunner(parent);
+	
+		// if it's a test expecting an exception with expected in annotation, don't cut it
+		CtAnnotation testAnnot = null;
+		for (CtAnnotation ctAnnot : element.getAnnotations()) {
+			if (ctAnnot.getAnnotationType().getQualifiedName()
+					.equals("org.junit.Test"))
+				testAnnot = ctAnnot;
+		}
+		if (testAnnot != null) {
+			Map<String, Object> tmp = new HashMap<String, Object>(
+					testAnnot.getElementValues());
+			for (String key : tmp.keySet()) {
+				if (key.equals("expected")) {
+					addRunBefore(element);
+					addRunAfter(element);
+					return;
+				}
+			}
+		}
+				
+		boolean toBeCut = false;
 		Set<Integer> linestmp = new TreeSet<Integer>();
 		for (StackTraceElement ste : cuts) {
 			if(element.getSimpleName().equals(ste.getMethodName()) && parent.getActualClass().getCanonicalName().equals(ste.getClassName())){
-				toBeSpooned=true;
+				toBeCut=true;
 				linestmp.add(ste.getLineNumber());
 			}
 		}
-		if(!toBeSpooned)return;
+		if(!toBeCut) {
+			addRunBefore(element);
+			addRunAfter(element);
+			return;
+		};
 		
 		CtFieldReference annotArg = getFactory().Core().createFieldReference();
 		annotArg.setDeclaringType(getFactory().Type().createReference(MethodSorters.class));
@@ -124,13 +139,11 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 		for (CtLocalVariable statement : localVar) {
 			if(statement.getParent() instanceof CtCatch)continue;
 			CtField field = getFactory().Core().createField();
-			if(((CtLocalVariable) statement).getSimpleName().equalsIgnoreCase("client")){
-				System.out.println("here");
-			}
 			field.setSimpleName(((CtLocalVariable) statement).getSimpleName()+"_"+element.getSimpleName());
 			field.setType(((CtLocalVariable) statement).getType());
-			if(element.hasModifier(ModifierKind.STATIC));
-				field.addModifier(ModifierKind.STATIC);
+			
+			// the field has to be static to persistover calls
+			field.addModifier(ModifierKind.STATIC);
 			parent.addField(field);
 			
 			if(((CtLocalVariable) statement).getDefaultExpression()!=null){
@@ -173,7 +186,7 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 			}
 			
 			// if we are refereering to a foreach variable, do nothing
-			if (variableAccess.getVariable().getDeclaration().getParent() instanceof CtForEach) {
+			if (variableAccess.getVariable().getDeclaration() != null && variableAccess.getVariable().getDeclaration().getParent() instanceof CtForEach) {
 				continue;
 			}
 			if(!extracted)continue;
@@ -189,8 +202,7 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 			variableAccess.replace(field);
 		}
 		
-		boolean firstPart=true;
-		CtMethod previous = null;
+		List<CtMethod> lm = new ArrayList<CtMethod>();
 		
 		for (int i = 1; i < statements.size(); i++) {
 			int currentStatLine = 0;
@@ -211,20 +223,8 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 				CtMethod m = getFactory().Core().clone(element);
 				m.setSimpleName(element.getSimpleName()+"_"+getRounded(currentCut));
 				m.setBody(b);
-				if(!firstPart){
-					CtAnnotation annotation = getFactory().Core().createAnnotation();
-					annotation.setAnnotationType(getFactory().Type().createReference(DontRunBefore.class));
-					m.addAnnotation(annotation);
-				}else{
-					firstPart=false;
-				}
-				if(previous!=null){
-					CtAnnotation annotation = getFactory().Core().createAnnotation();
-					annotation.setAnnotationType(getFactory().Type().createReference(DontRunAfter.class));
-					previous.addAnnotation(annotation);
-				}				
-				previous = m;
 				parent.addMethod(m);
+				lm.add(m);
 				if(lines.length>currentCut+1)
 					cutLine = lines[++currentCut];
 				else break;
@@ -240,24 +240,30 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 			CtMethod m = getFactory().Core().clone(element);
 			m.setSimpleName(element.getSimpleName()+"_"+ getRounded(++currentCut));
 			m.setBody(b);
-			if(!firstPart){
-				CtAnnotation annotation = getFactory().Core().createAnnotation();
-				annotation.setAnnotationType(getFactory().Type().createReference(DontRunBefore.class));
-				m.addAnnotation(annotation);
-			}else{
-				firstPart=false;
-			}
-			if(previous!=null){
-				CtAnnotation annotation = getFactory().Core().createAnnotation();
-				annotation.setAnnotationType(getFactory().Type().createReference(DontRunAfter.class));
-				previous.addAnnotation(annotation);
-			}
 			parent.addMethod(m);
+			lm.add(m);
 		}
+
 		
+		addRunBefore(lm.get(0));		
+		addRunAfter(lm.get(lm.size()-1));		
+
 		parent.removeMethod(element);
 	}
 
+	private void addRunBefore(final CtMethod element) {
+		CtAnnotation annotation = getFactory().Core().createAnnotation();
+		annotation.setAnnotationType(getFactory().Type().createReference(
+				RunBefore.class));
+		element.addAnnotation(annotation);
+	}
+
+	private void addRunAfter(final CtMethod element) {
+		CtAnnotation annotation = getFactory().Core().createAnnotation();
+		annotation.setAnnotationType(getFactory().Type().createReference(
+				RunAfter.class));
+		element.addAnnotation(annotation);
+	}
 	private String getRounded(int i) {
 		if(i<10)return "00"+i;
 		if(i<100) return "0"+i;

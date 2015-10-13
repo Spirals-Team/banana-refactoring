@@ -3,76 +3,131 @@ package bcu.nopol.processor;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
 
 import spoon.processing.AbstractProcessor;
 import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtCatch;
 import spoon.reflect.code.CtCatchVariable;
+import spoon.reflect.code.CtInvocation;
 import spoon.reflect.code.CtTry;
 import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.reference.CtFieldReference;
 import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.visitor.filter.TypeFilter;
 
 @SuppressWarnings("rawtypes")
 /** removes the expected exceptions */
 public class ExpectedRemover extends AbstractProcessor<CtMethod> {
 
-	
-	@SuppressWarnings({ "unchecked"})
+	@SuppressWarnings({ "unchecked" })
 	@Override
 	public void process(CtMethod element) {
-		if(element.getBody()==null)return;
+		if (element.getBody() == null)
+			return;
 		CtClass parent = null;
-		try{
+		try {
 			parent = element.getParent(CtClass.class);
-		}catch(Exception e){
+		} catch (Exception e) {
 			return;
 		}
-		if(element.getAnnotations()==null)return;
+		if (element.getAnnotations() == null)
+			return;
 		CtAnnotation annot = null;
 		for (CtAnnotation ctAnnot : element.getAnnotations()) {
-			if(ctAnnot.getAnnotationType().getQualifiedName().equals("org.junit.Test"))
-				annot=ctAnnot;
+			if (ctAnnot.getAnnotationType().getQualifiedName()
+					.equals("org.junit.Test"))
+				annot = ctAnnot;
 		}
-		if(annot==null)return;
-		Map<String,Object> tmp = new HashMap<String, Object>(annot.getElementValues());
+		if (annot == null)
+			return;
+		Map<String, Object> tmp = new HashMap<String, Object>(
+				annot.getElementValues());
 		for (String key : tmp.keySet()) {
-			if(key.equals("expected")){
+			if (key.equals("expected")) {
 				Object tmp2 = tmp.get(key);
-				CtTypeReference type = null;
-				if(tmp2 instanceof CtTypeReference){
-					type=(CtTypeReference) tmp2;
-				}else if(tmp2 instanceof CtFieldReference){
-					type= ((CtFieldReference) tmp2).getDeclaringType();
+
+				CtTypeReference expectedtype = null;
+				if (tmp2 instanceof CtTypeReference) {
+					expectedtype = (CtTypeReference) tmp2;
+				} else if (tmp2 instanceof CtFieldReference) {
+					expectedtype = ((CtFieldReference) tmp2).getDeclaringType();
 				}
-				
+
 				CtCatchVariable e = getFactory().Core().createCatchVariable();
 				e.setSimpleName("e");
-				e.setType(type);
-				
+				// We catch all exceptions
+				e.setType(expectedtype);
+
 				CtBlock catchBlock = getFactory().Core().createBlock();
 
 				CtCatch c = getFactory().Core().createCatch();
 				c.setParameter(e);
 				c.setBody(catchBlock);
-				
-				CtTry t = getFactory().Core().createTry();
-				t.setBody(element.getBody());
-				t.setCatchers(Arrays.asList(new CtCatch[]{c}));
 
-				CtBlock b = getFactory().Core().createBlock();
-				b.addStatement(t);
+				boolean thrownExceptionCanBeFound = isRuntimeException(expectedtype);
+				if (thrownExceptionCanBeFound) {
+					System.err.println(expectedtype.toString() +" is runtime ");					
+				}
+
+				for (CtInvocation<?> inv : element.getBody().getElements(
+						new TypeFilter<>(CtInvocation.class))) {
+					if (inv.getExecutable().getDeclaration() == null)
+						continue;
+					for (CtTypeReference thrown : inv.getExecutable()
+							.getDeclaration().getThrownTypes()) {
+						if (expectedtype.isAssignableFrom(thrown)) {
+							thrownExceptionCanBeFound = true;
+						}
+					}
+				}
+				if (!thrownExceptionCanBeFound) {
+					System.err.println("cannot throw "+expectedtype.toString());					
+				}
 				
-				element.setBody(b);
-				
+				expectedtype.setSimpleName("java.lang.Throwable") ;expectedtype.setPackage(null);
+				{
+					CtTry t = getFactory().Core().createTry();
+					t.setBody(element.getBody());
+					t.setCatchers(Arrays.asList(new CtCatch[] { c }));
+
+					CtBlock b = getFactory().Core().createBlock();
+					b.addStatement(t);
+
+					element.setBody(b);
+				}
+
 				tmp.remove(key);
 				annot.setElementValues(tmp);
 				return;
 			}
 		}
 	}
+
 	
+	
+	private boolean isRuntimeException(CtTypeReference type) {
+		System.err.println("isruntime? of"+type.toString());
+		if (type.getActualClass() != null) {
+			if (RuntimeException.class.isAssignableFrom(type.getActualClass())) {
+				return true;
+			}
+			if (Error.class.isAssignableFrom(type.getActualClass())) {
+				System.out.println(type.getActualClass().toString()+" instanceof Error");
+				return true;
+			}
+		} else if (type.getDeclaration() != null) {
+			if ("java.lang.Exception".equals(type.getDeclaration().getSuperclass().toString())) {
+				return false;
+			}
+			if ("java.lang.Exception".equals(type.getDeclaration().getSuperclass().toString())) {
+				return false;
+			}
+			return isRuntimeException(type.getDeclaration().getSuperclass());
+		}
+		return false;
+	}
 
 }

@@ -16,42 +16,30 @@ import spoon.reflect.reference.CtExecutableReference;
 public class TestLinerAll extends AbstractProcessor<CtMethod> {
 
 	
-	@SuppressWarnings({ "unchecked"})
-	@Override
-	public void process(CtMethod element) {
-		if(element.getBody()==null)return;
+	static boolean consider(CtMethod element) {
+		if(element.getBody()==null)return false;
 		CtClass parent = null;
 		try{
 			parent = element.getParent(CtClass.class);
 		}catch(Exception e){
-			return;
+			return false;
 		}
-		if(element.getAnnotations()==null)return;
-		boolean isTest = false;
+		if(element.getAnnotations()==null) return false;
 		for (CtAnnotation annot : element.getAnnotations()) {
 			if(annot.getAnnotationType().getQualifiedName().equals("org.junit.Test"))
-				isTest=true;
+				return true;
 		}
+		return false;
+	}
+	
+	@SuppressWarnings({ "unchecked"})
+	@Override
+	public void process(CtMethod element) {
 //		if(!isTest){
 //			if(element.getSimpleName().startsWith("test") && element.hasModifier(ModifierKind.PUBLIC) && !parent.hasModifier(ModifierKind.ABSTRACT))
 //				isTest=true;
 //		}
-		if(!isTest)return;
-		
-		CtLiteral methNum = getFactory().Core().createLiteral();
-		methNum.setValue((parent.getPackage()!=null?(parent.getPackage().getQualifiedName()+"."):"")+parent.getSimpleName()+":"+element.getSimpleName());
-		
-		CtExecutableReference thenExecutedRef = getFactory().Core().createExecutableReference();
-		thenExecutedRef.setDeclaringType(getFactory().Type().createReference("bcu.nopol.control.IfController"));
-		thenExecutedRef.setSimpleName("newMethod");
-		thenExecutedRef.setStatic(true);
-		
-		CtInvocation startMeth = getFactory().Core().createInvocation();
-		startMeth.setExecutable(thenExecutedRef);
-		startMeth.setArguments(Arrays.asList(new CtLiteral[]{methNum}));
-		
-		startMeth.setParent(element.getBody());
-		element.getBody().insertBegin(startMeth);
+		if(!consider(element))return;
 		
 		int nbStats = element.getBody().getStatements().size();
 		int j=0;

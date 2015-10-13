@@ -70,11 +70,12 @@ public class DefaultSpooner extends AbstractConfigurator implements ISpooner {
 		for (URL url : eClassloader.getURLs()) {
 			tmp2+=url.getPath()+":";
 		}
+		System.out.println(tmp2);
 		tmp2 = tmp2.substring(0, tmp2.length()-1);
 		args.add(tmp2);
 		
 		
-		args.add("-r");
+		//args.add("-r");// no resources
 //		args.add("-x");
 		if(processors != null && processors.length>0){
 			args.add("-p");
