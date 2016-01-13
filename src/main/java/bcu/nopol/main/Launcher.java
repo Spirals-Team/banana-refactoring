@@ -30,27 +30,29 @@ import bcu.nopol.control.IfUsage;
 public class Launcher {
 	
 	// set here this to your own path
-	public static final String WORKSPACE_METADATA_PATH = 
+	public String WORKSPACE_METADATA_PATH = 
 			System.getProperty("WORKSPACE_METADATA_PATH") != null ? 
 			System.getProperty("WORKSPACE_METADATA_PATH")
 			: "/home/martin/workspace/.metadata";
-	public static final String ORIG_ECLIPSE_PROJECT_NAME = 
+			
+			// has to be static because being used in LsClass, TODO change to non-static
+	public static String ORIG_ECLIPSE_PROJECT_NAME = 
 			System.getProperty("ORIG_ECLIPSE_PROJECT_NAME") != null ? 
 			System.getProperty("ORIG_ECLIPSE_PROJECT_NAME")
 			: "shindig-java-gadgets";
-	public static final String TARGET_ECLIPSE_PROJECT_NAME = 
+	public String TARGET_ECLIPSE_PROJECT_NAME = 
 			System.getProperty("TARGET_ECLIPSE_PROJECT_NAME") != null ? 
 			System.getProperty("TARGET_ECLIPSE_PROJECT_NAME")
 			: "shindig-java-gadgets-refactored";
-	public static final String OUTPUT_PROJECT_PATH = 
-			System.getProperty("OUTPUT_PROJECT_PATH") != null ? 
+	public static String OUTPUT_PROJECT_PATH = 
+		System.getProperty("OUTPUT_PROJECT_PATH") != null ? 
 			System.getProperty("OUTPUT_PROJECT_PATH")
 			: "/home/martin/workspace/shindig-java-gadgets-refactored";
 	
+	// has to be static for use in MethodCutterProcessor TODO change to non-static			
+	private static List<StackTraceElement> cuts = null;
 	
-	private List<StackTraceElement> cuts = null;
 	private String eclipseMetadata = WORKSPACE_METADATA_PATH;
-	private static Launcher launch;
 
 	private final String srcJava = "src/main/java";
 	private String srcTest = "src/test/java";
@@ -63,6 +65,7 @@ public class Launcher {
 //	private String srcTest = "src/test/java";
 
 	public static void main(String[] args) throws Throwable {
+		Launcher launch;
 		launch = new Launcher();
 		if(args.length==0 || args[0].equals("-1"))
 			launch.expe1();
@@ -74,8 +77,8 @@ public class Launcher {
 			launch.expe4();
 	}
 
-	
-	private void expe1() throws Throwable {
+	/** transforms the app (and not the tests */
+	public void expe1() throws Throwable {
 		ISpooner spooner = new DefaultSpooner();
 		spooner.setEclipseProject(ORIG_ECLIPSE_PROJECT_NAME);
 		spooner.setEclipseMetadataFolder(eclipseMetadata);
@@ -93,9 +96,12 @@ public class Launcher {
 		spooner.setProcessors("bcu.nopol.processor.AddCallToNewMethod","bcu.nopol.processor.TestLinerAll","bcu.nopol.processor.LsClass");
 		spooner.setOutputFolder(OUTPUT_PROJECT_PATH+"/"+srcTest);
 		spooner.spoon();
+		
+		System.out.println("now refresh to recompile");
 	}
 	
-	private void expe2() throws Throwable {
+	/** executes the test suite, creates file cutsPerIf, and the cuts the test suite */
+	public void expe2() throws Throwable {
 		TestRunnerCore runner = new TestRunnerCore();
 		runner.setEclipseMetadataFolder(eclipseMetadata);
 		runner.setEclipseProject(TARGET_ECLIPSE_PROJECT_NAME);
@@ -250,9 +256,10 @@ public class Launcher {
 		System.out.println("impurely cov ifs: "+impureAlways.size());
 		System.out.println("impure once ifs: "+impureOnce.size());
 		
+		System.out.println("now refresh to recompile");
 }
 	
-	private void expe3() throws Throwable {
+	public void expe3() throws Throwable {
 		TestRunnerCore runner = new TestRunnerCore();
 		runner.setEclipseMetadataFolder(eclipseMetadata);
 		runner.setEclipseProject(TARGET_ECLIPSE_PROJECT_NAME);
@@ -268,7 +275,7 @@ public class Launcher {
 	}
 	
 	/** same as expe2 but transforms from junit3 to junit4 (for lang) */
-	private void expe4() throws Throwable {
+	public void expe4() throws Throwable {
 		ISpooner spooner = new DefaultSpooner();
 		spooner.setEclipseProject(ORIG_ECLIPSE_PROJECT_NAME);
 		spooner.setEclipseMetadataFolder(eclipseMetadata);
@@ -290,7 +297,7 @@ public class Launcher {
 	}
 
 	public static List<StackTraceElement> getCurrentCuts() {
-		return launch.cuts;
+		return cuts;
 	}
 	
 }
