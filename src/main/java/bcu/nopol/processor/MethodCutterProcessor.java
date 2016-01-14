@@ -44,7 +44,9 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 	private List<StackTraceElement> cuts = null;
 	private int skippedLine=0;
 	private int skippedField=0;
-	
+	public static int nbTest = 0;
+	public static int nbRefactoredTest = 0;
+	public static List<CtMethod> refactoredTestMethods = new ArrayList<>();
 	@Override
 	public void processingDone() {
 		super.processingDone();
@@ -63,33 +65,39 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 	}
 	
 	@Override
-	public void process(final CtMethod element) {
+	public void process(final CtMethod method) {
 		
 		CtClass parent = null;
 		try{
-			parent = element.getParent(CtClass.class);
+			parent = method.getParent(CtClass.class);
 		}catch(Exception e){
 			return;
 		}
 		
-		if (element.getAnnotation(org.junit.Test.class)==null) {return;}
+		if (method.getAnnotation(org.junit.Test.class)==null) {return;}
 
 		BRefactoring.annotateWithNewRunner(parent);
 	
 		// if it's a test expecting an exception with expected in annotation, don't cut it
 		CtAnnotation testAnnot = null;
-		for (CtAnnotation ctAnnot : element.getAnnotations()) {
+		for (CtAnnotation ctAnnot : method.getAnnotations()) {
 			if (ctAnnot.getAnnotationType().getQualifiedName()
 					.equals("org.junit.Test"))
 				testAnnot = ctAnnot;
 		}
-		if (testAnnot != null) {
+		
+		if (testAnnot == null) {
+			// don't cut not tests
+			return;
+		}
+		else {
+			nbTest++;
 			Map<String, Object> tmp = new HashMap<String, Object>(
 					testAnnot.getElementValues());
 			for (String key : tmp.keySet()) {
 				if (key.equals("expected")) {
-					addRunBefore(element);
-					addRunAfter(element);
+					addRunBefore(method);
+					addRunAfter(method);
 					return;
 				}
 			}
@@ -98,17 +106,26 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 		boolean toBeCut = false;
 		Set<Integer> linestmp = new TreeSet<Integer>();
 		for (StackTraceElement ste : cuts) {
-			if(element.getSimpleName().equals(ste.getMethodName()) && parent.getActualClass().getCanonicalName().equals(ste.getClassName())){
+			if(method.getSimpleName().equals(ste.getMethodName()) && parent.getActualClass().getCanonicalName().equals(ste.getClassName())){
 				toBeCut=true;
 				linestmp.add(ste.getLineNumber());
 			}
 		}
 		if(!toBeCut) {
-			addRunBefore(element);
-			addRunAfter(element);
+			addRunBefore(method);
+			addRunAfter(method);
+			
+			method.replace(null); // remove
 			return;
-		};
+		} else {
+			// nothing
+			// we continue
+
+		}
 		
+		refactoredTestMethods.add(method);
+		nbRefactoredTest++;
+
 		CtFieldReference annotArg = getFactory().Core().createFieldReference();
 		annotArg.setDeclaringType(getFactory().Type().createReference(MethodSorters.class));
 		annotArg.setSimpleName("NAME_ASCENDING");
@@ -122,24 +139,24 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 		if(!parent.getAnnotations().contains(annot))
 			parent.addAnnotation(annot);
 		
-		List<CtStatement> statements = element.getBody().getStatements();
+		List<CtStatement> statements = method.getBody().getStatements();
 		int currentCut = 0;
 		int previousCut =0;
 		Integer[] lines = linestmp.toArray(new Integer[0]);
 		int cutLine = lines[currentCut];
 		
 
-		List<CtLocalVariable> localVar = element.getElements(new Filter<CtLocalVariable>() {
+		List<CtLocalVariable> localVar = method.getElements(new Filter<CtLocalVariable>() {
 			@Override
 			public boolean matches(CtLocalVariable element) {
 				return !element.getSimpleName().equals("this") && !element.getSimpleName().equals("super");
 			}
-		});
+		});	
 
 		for (CtLocalVariable statement : localVar) {
 			if(statement.getParent() instanceof CtCatch)continue;
 			CtField field = getFactory().Core().createField();
-			field.setSimpleName(((CtLocalVariable) statement).getSimpleName()+"_"+element.getSimpleName());
+			field.setSimpleName(((CtLocalVariable) statement).getSimpleName()+"_"+method.getSimpleName());
 			field.setType(((CtLocalVariable) statement).getType());
 			
 			// the field has to be static to persistover calls
@@ -149,7 +166,7 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 			if(((CtLocalVariable) statement).getDefaultExpression()!=null){
 				
 				CtFieldReference ref = getFactory().Core().createFieldReference();
-				ref.setSimpleName(((CtLocalVariable) statement).getSimpleName()+"_"+element.getSimpleName());
+				ref.setSimpleName(((CtLocalVariable) statement).getSimpleName()+"_"+method.getSimpleName());
 				ref.setType(((CtLocalVariable) statement).getType());
 				
 				CtFieldAccess access = getFactory().Core().createFieldWrite();
@@ -166,7 +183,7 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 			}
 		}
 
-		List<CtVariableAccess> accesses = element.getElements(new Filter<CtVariableAccess>() {
+		List<CtVariableAccess> accesses = method.getElements(new Filter<CtVariableAccess>() {
 			@Override
 			public boolean matches(CtVariableAccess element) {
 				return !(element instanceof CtFieldAccess);
@@ -177,7 +194,7 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 			boolean extracted = false;
 			for (CtField fields : (List<CtField>)parent.getFields()) {
 				try{//BCUTAG here too
-					if(fields.getSimpleName().equals(variableAccess.getVariable().getSimpleName()+"_"+element.getSimpleName()))
+					if(fields.getSimpleName().equals(variableAccess.getVariable().getSimpleName()+"_"+method.getSimpleName()))
 						extracted=true;
 				}catch(NullPointerException npe){
 					skippedField++;
@@ -191,7 +208,7 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 			}
 			if(!extracted)continue;
 			CtFieldReference ref = getFactory().Core().createFieldReference();
-			ref.setSimpleName(variableAccess.getVariable().getSimpleName()+"_"+element.getSimpleName());
+			ref.setSimpleName(variableAccess.getVariable().getSimpleName()+"_"+method.getSimpleName());
 			ref.setType(variableAccess.getVariable().getType());
 			
 			CtFieldAccess field = getFactory().Core().createFieldWrite();
@@ -220,8 +237,8 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 				CtBlock b = getFactory().Core().createBlock();
 				b.setStatements(stats);
 				
-				CtMethod m = getFactory().Core().clone(element);
-				m.setSimpleName(element.getSimpleName()+"_"+getRounded(currentCut));
+				CtMethod m = getFactory().Core().clone(method);
+				m.setSimpleName(method.getSimpleName()+"_"+getRounded(currentCut));
 				m.setBody(b);
 				parent.addMethod(m);
 				lm.add(m);
@@ -237,8 +254,8 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 			CtBlock b = getFactory().Core().createBlock();
 			b.setStatements(stats);
 			
-			CtMethod m = getFactory().Core().clone(element);
-			m.setSimpleName(element.getSimpleName()+"_"+ getRounded(++currentCut));
+			CtMethod m = getFactory().Core().clone(method);
+			m.setSimpleName(method.getSimpleName()+"_"+ getRounded(++currentCut));
 			m.setBody(b);
 			parent.addMethod(m);
 			lm.add(m);
@@ -248,7 +265,7 @@ public class MethodCutterProcessor extends AbstractProcessor<CtMethod> {
 		addRunBefore(lm.get(0));		
 		addRunAfter(lm.get(lm.size()-1));		
 
-		parent.removeMethod(element);
+		parent.removeMethod(method);
 	}
 
 	private void addRunBefore(final CtMethod element) {

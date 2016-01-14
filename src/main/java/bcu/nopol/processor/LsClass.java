@@ -25,6 +25,8 @@ import spoon.reflect.visitor.filter.AnnotationFilter;
 import bcornu.resi.annot.BananaRefactoringRunner;
 import bcu.nopol.main.Launcher;
 
+/** adds two new test classes that calls all tests.
+* one uses the BananaRefactoring runner */
 @SuppressWarnings("rawtypes")
 public class LsClass extends AbstractProcessor<CtClass> {
 
@@ -34,9 +36,9 @@ public class LsClass extends AbstractProcessor<CtClass> {
 	@Override
 	public void processingDone() {
 		if (getFactory().Package().get("main")!=null) return;		
-		createClass("Banane"+Launcher.ORIG_ECLIPSE_PROJECT_NAME, bWithBref);
+		createClass(Launcher.ORIG_ECLIPSE_PROJECT_NAME+"Banane", bWithBref);
 		System.out.println("done");
-		createClass("Standard"+Launcher.ORIG_ECLIPSE_PROJECT_NAME, bWithBlock);
+		createClass(Launcher.ORIG_ECLIPSE_PROJECT_NAME+"Standard", bWithBlock);
 		System.out.println("done");
 	}
 

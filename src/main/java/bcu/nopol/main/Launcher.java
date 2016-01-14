@@ -26,6 +26,7 @@ import bcornu.resi.annot.BananaRefactoringRunner;
 import bcornu.resi.annot.RunBefore;
 import bcu.nopol.control.IfController;
 import bcu.nopol.control.IfUsage;
+import bcu.nopol.processor.MethodCutterProcessor;
 
 public class Launcher {
 	
@@ -77,7 +78,7 @@ public class Launcher {
 			launch.expe4();
 	}
 
-	/** transforms the app (and not the tests */
+	/** transforms the app (and not the tests) and generate an overview test class */
 	public void expe1() throws Throwable {
 		ISpooner spooner = new DefaultSpooner();
 		spooner.setEclipseProject(ORIG_ECLIPSE_PROJECT_NAME);
@@ -93,11 +94,11 @@ public class Launcher {
 		spooner.setEclipseProject(ORIG_ECLIPSE_PROJECT_NAME);
 		spooner.setEclipseMetadataFolder(eclipseMetadata);
 		spooner.setSourceFolder(new String[]{srcTest});
-		spooner.setProcessors("bcu.nopol.processor.AddCallToNewMethod","bcu.nopol.processor.TestLinerAll","bcu.nopol.processor.LsClass");
+		spooner.setProcessors("bcu.nopol.processor.AddCallToNewMethod","bcu.nopol.processor.TestLinerAll","bcu.nopol.processor.LsClass","bcu.nopol.processor.TestSuiteGenerator");
 		spooner.setOutputFolder(OUTPUT_PROJECT_PATH+"/"+srcTest);
 		spooner.spoon();
 		
-		System.out.println("now refresh to recompile");
+		System.out.println("recompile (refresh in your IDE)");
 	}
 	
 	/** executes the test suite, creates file cutsPerIf, and the cuts the test suite */
@@ -229,6 +230,9 @@ public class Launcher {
 		spooner2.spoon();
 
 		
+		System.out.println("nb tests :"+MethodCutterProcessor.nbTest);
+		System.out.println("nb refactored tests :"+MethodCutterProcessor.nbRefactoredTest);
+		System.out.println("test always pure :"+purTest.size());
 		System.out.println("test always pure :"+purTest.size());
 		System.out.println("test absol impure :"+impureTests.size());
 		System.out.println("number of const :"+IfController.getConstNumberRetenue()+":"+IfController.getConstNumber());
