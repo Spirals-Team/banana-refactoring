@@ -34,7 +34,10 @@ public class TestSuiteGenerator extends AbstractProcessor<CtClass> {
 	
 	@Override
 	public void processingDone() {
-		addStatement("java.util.List<String> l2 = new java.util.ArrayList<>();for (org.junit.runner.notification.Failure f:l) {l2.add(f.getDescription().toString());}if (l.size()>0) throw new AssertionError(l2.toString());");
+		addStatement("java.util.List<String> l2 = new java.util.ArrayList<>();for (org.junit.runner.notification.Failure f:l) {"
+					+"if (\"No runnable methods\".equals(f.getMessage())) continue; "
+					+"l2.add(f.getDescription().toString());}if (l2.size()>0) throw new AssertionError(l2.toString());"
+			);
         
 		createClass(Launcher.ORIG_ECLIPSE_PROJECT_NAME+"_Test", body);
 		System.out.println("done");
