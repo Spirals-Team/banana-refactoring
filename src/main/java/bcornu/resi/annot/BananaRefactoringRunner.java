@@ -29,7 +29,7 @@ public class BananaRefactoringRunner extends BlockJUnit4ClassRunner {
 	@Override
 	protected Statement methodBlock(FrameworkMethod method) {
 		try {
-			System.out.println("run test method"+method.getName());
+			System.out.println("run test method "+method.getName());
 			// we instantiate an object
 			Statement statement; 
 			if (o == null || method.getAnnotation(RunBefore.class)!=null) {
