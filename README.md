@@ -1,5 +1,7 @@
+B-Refactoring / Banana-refactoring
+=================
 
-This repository contains a research prototype for automatically refactoring test cases in smaller parts.
+This repository contains a research prototype for automatically refactoring test cases in smaller parts, with a technique called B-Refactoring.
 
 See [Dynamic Analysis can be Improved with Automatic Test Suite Refactoring](http://arxiv.org/pdf/1506.01883) (Jifeng Xuan, Benoit Cornu, Matias Martinez, Benoit Baudry, Lionel Seinturier, Martin Monperrus), Technical report 1506.01883, Arxiv, 2015
 
@@ -17,7 +19,7 @@ See [Dynamic Analysis can be Improved with Automatic Test Suite Refactoring](htt
 Contact: [Martin Monperrus](http://www.monperrus.net/martin/contact)
 
 Compilation
-=====
+----
 
 We provide the guidelines for the Eclipse IDE.
 
@@ -30,7 +32,7 @@ mvn eclipse:eclipse
 Now, import and open the project in the Eclipse IDE (File >> Import >> Existing project into workspace)
 
 Sample usage
-=======
+----
 
 We now consider the example provided in the repo (spojo-core).
 ```
