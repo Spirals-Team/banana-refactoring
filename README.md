@@ -3,18 +3,22 @@ B-Refactoring / Banana-refactoring
 
 This repository contains a research prototype for automatically refactoring test cases in smaller parts, with a technique called B-Refactoring.
 
-See [Dynamic Analysis can be Improved with Automatic Test Suite Refactoring](http://arxiv.org/pdf/1506.01883) (Jifeng Xuan, Benoit Cornu, Matias Martinez, Benoit Baudry, Lionel Seinturier, Martin Monperrus), Technical report 1506.01883, Arxiv, 2015
+Main publication:
+[B-Refactoring: Automatic Test Code Refactoring to Improve Dynamic Analysis](https://hal.archives-ouvertes.fr/hal-01309004/document) (Jifeng Xuan, Benoit Cornu, Matias Martinez, Benoit Baudry, Lionel Seinturier, Martin Monperrus), In Information and Software Technology, Elsevier, 2016.
 
 ```
-@techreport{brefactoring,
-   author = {Jifeng Xuan and Benoit Cornu and Matias Martinez and Benoit Baudry and Lionel Seinturier and Martin Monperrus},
-    title = {{Dynamic Analysis can be Improved with Automatic Test Suite Refactoring}},
-  institution = {Arxiv},
-   number = {1506.01883},
-     year = 2015,
-     url = {http://arxiv.org/pdf/1506.01883},
+@article{xuan:hal-01309004,
+ title = {B-Refactoring: Automatic Test Code Refactoring to Improve Dynamic Analysis},
+ author = {Xuan, Jifeng and Cornu, Benoit and Martinez, Matias and Baudry, Benoit and Seinturier, Lionel and Monperrus, Martin},
+ journal = {Information and Software Technology},
+ publisher = {Elsevier},
+ year = {2016},
 }
 ```
+
+
+Previous paper:  [Dynamic Analysis can be Improved with Automatic Test Suite Refactoring](http://arxiv.org/pdf/1506.01883) (Jifeng Xuan, Benoit Cornu, Matias Martinez, Benoit Baudry, Lionel Seinturier, Martin Monperrus), Technical report 1506.01883, Arxiv, 2015
+
 
 Contact: [Martin Monperrus](http://www.monperrus.net/martin/contact)
 
