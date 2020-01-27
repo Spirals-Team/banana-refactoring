@@ -4,7 +4,7 @@ B-Refactoring / Banana-refactoring
 This repository contains a research prototype for automatically refactoring test cases in smaller parts, with a technique called B-Refactoring.
 
 Main publication:
-[B-Refactoring: Automatic Test Code Refactoring to Improve Dynamic Analysis](https://hal.archives-ouvertes.fr/hal-01309004/document) (Jifeng Xuan, Benoit Cornu, Matias Martinez, Benoit Baudry, Lionel Seinturier, Martin Monperrus), In Information and Software Technology, Elsevier, 2016.
+[B-Refactoring: Automatic Test Code Refactoring to Improve Dynamic Analysis](https://hal.archives-ouvertes.fr/hal-01309004/document) (Jifeng Xuan, Benoit Cornu, Matias Martinez, Benoit Baudry, Lionel Seinturier, Martin Monperrus), In Information and Software Technology, Elsevier, 2016, [doi:10.1016/j.infsof.2016.04.016](https://doi.org/10.1016/j.infsof.2016.04.016).
 
 ```
 @article{xuan:hal-01309004,
@@ -12,6 +12,7 @@ Main publication:
  author = {Xuan, Jifeng and Cornu, Benoit and Martinez, Matias and Baudry, Benoit and Seinturier, Lionel and Monperrus, Martin},
  journal = {Information and Software Technology},
  publisher = {Elsevier},
+ doi = {10.1016/j.infsof.2016.04.016},
  year = {2016},
 }
 ```
